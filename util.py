@@ -1,15 +1,13 @@
+
+
 import argparse
 import os.path as osp
 import numpy as np
 
-parser = argparse.ArgumentParser(description='Read XML data from files')
-parser.add_argument('--dir_path', type=str, default='/home/aish/project/XML/pml/Bibtex', help='path of the directory containing data-file')
-parser.add_argument('--data_filename', type=str, default='Bibtex_data.txt', help='data_filename')
-parser.add_argument('--train_split_filename', type=str, default='bibtex_trSplit.txt', help='train_split_filename')
-parser.add_argument('--test_split_filename', type=str, default='bibtex_tstSplit.txt', help='test_split_filename')
-args = parser.parse_args()
-
 def read_datafile(dir_path, data_filename):
+    """
+        Reads data file
+    """
 	with open(osp.join(dir_path, data_filename), 'r') as f:
 		for idx, line in enumerate(f.readlines()):
 			if(idx==0):
@@ -27,20 +25,21 @@ def read_datafile(dir_path, data_filename):
 	return X, Y
 
 def read_splitfile(dir_path, filename):
-
+    """
+        Returns split file index
+    """
 	split = np.array([])
 	with open(osp.join(dir_path, filename), 'r') as f:
 		for line in f.readlines():
 			temp = [int(k) for k in line.split(' ')]
 			if(split.size==0):
 				split = np.array(temp).reshape(-1,1)
-			else :
-				#print(split.shape)
+			else :=
 				temp = np.array(temp).reshape(-1,1)
 				split = np.hstack((split,temp))
-	#print(split[:,0])
-	#print(split.shape)
-	return (split-1)	#for 0 indexing
+    # Split is zero indexed
+    split -= 1	
+    return split
 
 def train_model(X, Y, split):
 
@@ -57,10 +56,3 @@ def test_data_sanity(X, Y, idx):
 	print("Sparse representation of Y[", idx, "] : \n", label_index[Y[idx]==1],"\n")
 	print("Number of ones in X[{}] : {} \n".format(idx, np.sum(X[idx])))
 	print("Number of ones in Y[{}] : {} \n".format(idx, np.sum(Y[idx])))
-# X, Y = read_datafile(args.dir_path, args.data_filename)
-# test_data_sanity(X,Y, 1)
-# X, Y = read_splitfile(args.dir_path, args.train_split_filename)
-# test_data_sanity(X,Y, 1)
-# X, Y = read_splitfile(args.dir_path, args.test_split_filename)
-# test_data_sanity(X,Y, 1)
-

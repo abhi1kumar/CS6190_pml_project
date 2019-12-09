@@ -252,4 +252,3 @@ def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_
 		U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r)
 
 	return V, U, W, beta
-    
