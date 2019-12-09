@@ -46,20 +46,20 @@ def ridge_solver_batch(Sigma, Vector):
     return output
 
 def get_psi(beta, V, Ls, lambda_psi):
-	"""
-		Calculates psi once beta and V have been computed
+    """
+        Calculates psi once beta and V have been computed
 
-		Inputs:
-		beta = shape L  x K
+        Inputs:
+        beta = shape L  x K
         V    = shape Ls  x K
-	"""
+    """
 
-	# Compute psi
-	beta_ls = beta[:Ls, :]										#beta_ls   = shape Ls x K
-	beta1   = beta_ls[:, :, None]								#beta1     = shape Ls x K x 1
-    beta2   = beta_ls[:, None, :]								#beta2     = shape Ls x 1 x K
-    betabetat = torch.sum(torch.matmul(beta1, beta2), axis=0)	#betabetat = shape K  x K	
-    psi = torch.matmul((betabetat + lambda_psi*torch.eye(V.shape[1])).inverse(),torch.matmul(beta_ls.t(), V))	#psi = shape K x K
+    # Compute psi
+    beta_ls = beta[:Ls, :]                                      #beta_ls   = shape Ls x K
+    beta1   = beta_ls[:, :, None]                               #beta1     = shape Ls x K x 1
+    beta2   = beta_ls[:, None, :]                               #beta2     = shape Ls x 1 x K
+    betabetat = torch.sum(torch.matmul(beta1, beta2), axis=0)   #betabetat = shape K  x K   
+    psi = torch.matmul((betabetat + lambda_psi*torch.eye(V.shape[1])).inverse(),torch.matmul(beta_ls.t(), V))   #psi = shape K x K
 
     return psi
 
@@ -114,7 +114,7 @@ def update_U(X, Y, V, W, omega, lambda_u):
     
     return U
 
- def update_V(Y, M, U, beta, omega, tau, lambda_v, r):
+def update_V(Y, M, U, beta, omega, tau, lambda_v, r):
     """
         Calculates the updated U for the M step of the EM algorithm
 
@@ -123,8 +123,8 @@ def update_U(X, Y, V, W, omega, lambda_u):
         M    = shape Ls x L
         U    = shape N  x K
         beta = shape L  x K
-		omega= shape N  x Ls
-		tau  = shape Ls x L
+        omega= shape N  x Ls
+        tau  = shape Ls x L
 
         Output:
         V    = shape Ls x K
@@ -132,23 +132,23 @@ def update_U(X, Y, V, W, omega, lambda_u):
 
     # Update for V
 
-    kappa_y = ((Y - 0.5).t())[:,:,None].repeat(1,1,U.shape[1])  	#kappa = shape Ls x N x K 
-    kappa_m = 0.5*(M + r)[:,:,None].repeat(1,1,beta.shape[1])		#kappa_m = shape Ls x L x K
-    sigma_V = torch.empty(Y.shape[1], U.shape[1], U.shape[1])		#sigma_V = shape Ls x K x K
+    kappa_y = ((Y - 0.5).t())[:,:,None].repeat(1,1,U.shape[1])      #kappa = shape Ls x N x K 
+    kappa_m = 0.5*(M + r)[:,:,None].repeat(1,1,beta.shape[1])       #kappa_m = shape Ls x L x K
+    sigma_V = torch.empty(Y.shape[1], U.shape[1], U.shape[1])       #sigma_V = shape Ls x K x K
     u1      = U[:, :, None]             #u1 = shape N x K x 1
     u2      = U[:, None, :]             #u2 = shape N x 1 x K
     uut     = torch.matmul(u1,u2)       #uut = shape N x K x K
-    omega_t = omega.t()					#omega_t = shape Ls x N
-    beta1   = beta[:, :, None]			#beta1   = shape L  x K x 1
-    beta2   = beta[:, None, :]			#beta2   = shape L  x 1 x K
-    betabetat = torch.matmul(beta1, beta2)	#betabetat = shape L x K x K
+    omega_t = omega.t()                 #omega_t = shape Ls x N
+    beta1   = beta[:, :, None]          #beta1   = shape L  x K x 1
+    beta2   = beta[:, None, :]          #beta2   = shape L  x 1 x K
+    betabetat = torch.matmul(beta1, beta2)  #betabetat = shape L x K x K
     for i in range(Y.shape[1]):
         omega_t_i    = (omega_t[i])[:, None, None].repeat(1, U.shape[1], U.shape[1])        #omega_i = shape N x K x K
-        tau_i      = (tau[i])[:, None, None].repeat(1, beta.shape[1], beta.shape[1])		#tau_i = shape L x K x K
+        tau_i      = (tau[i])[:, None, None].repeat(1, beta.shape[1], beta.shape[1])        #tau_i = shape L x K x K
         sigma_V[i] = (torch.sum(omega_t_i*uut, axis=0) + torch.sum(tau_i*betabetat, axis=0) + lambda_v*torch.eye(U.shape[1])).inverse()   #sigma_u[i] = shape K x K
 
-    term1 = torch.sum(kappa_y*U, axis=1).squeeze()					#term1 = shape Ls x K
-    term2 = torch.sum(kappa_m*beta, axis=1).squeeze()				#term2 = shape Ls x K
+    term1 = torch.sum(kappa_y*U, axis=1).squeeze()                  #term1 = shape Ls x K
+    term2 = torch.sum(kappa_m*beta, axis=1).squeeze()               #term2 = shape Ls x K
     V     = torch.matmul(sigma_V, (term1 + term2)[:,:,None]).squeeze()
     
     return V
@@ -160,7 +160,7 @@ def update_beta(M, V, tau, lambda_beta):
         Inputs:
         M    = shape Ls x L
         V    = shape Ls x K
-		tau  = shape Ls x L
+        tau  = shape Ls x L
 
         Output:
         beta = shape L  x K
@@ -168,17 +168,17 @@ def update_beta(M, V, tau, lambda_beta):
 
     # Update for beta
 
-    kappa_m    = (0.5*(M + r).t())[:,:,None].repeat(1,1,beta.shape[1])	#kappa_m = shape L x Ls x K
-    sigma_beta = torch.empty(M.shape[1], V.shape[1], V.shape[1])		#sigma_beta = shape L x K x K
+    kappa_m    = (0.5*(M + r).t())[:,:,None].repeat(1,1,beta.shape[1])  #kappa_m = shape L x Ls x K
+    sigma_beta = torch.empty(M.shape[1], V.shape[1], V.shape[1])        #sigma_beta = shape L x K x K
     v1      = V[:, :, None]             #v1 = shape Ls x K x 1
     v2      = V[:, None, :]             #v2 = shape Ls x 1 x K
     vvt     = torch.matmul(v1,v2)       #v2 = shape Ls x K x K
-    tau_t   = tau.t()					#tau_t = shape L x Ls
+    tau_t   = tau.t()                   #tau_t = shape L x Ls
     for i in range(M.shape[1]):
         tau_t_i    = (tau_t[i])[:, None, None].repeat(1, V.shape[1], V.shape[1])        #tau_t_i = shape Ls x K x K
         sigma_beta[i] = (torch.sum(tau_t_i*vvt, axis=0) + lambda_beta*torch.eye(V.shape[1])).inverse()   #sigma_u[i] = shape K x K
 
-    term1 = torch.sum(kappa_m*V, axis=1).squeeze()				#term1 = shape L x K
+    term1 = torch.sum(kappa_m*V, axis=1).squeeze()              #term1 = shape L x K
     beta  = torch.matmul(sigma_beta, term1 [:,:,None]).squeeze()#beta  = shape L x K
     
     return beta
@@ -212,7 +212,7 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
         X    = shape N  x D
         V    = shape Ls x K
         U    = shape N  x K
-		M    = shape Ls x L
+        M    = shape Ls x L
         W    = shape D  x K
         beta = shape L  x K
         tau  = shape Ls x L
@@ -241,14 +241,14 @@ def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_
         X    = shape N  x D
         V    = shape Ls x K
         U    = shape N  x K
-		M    = shape Ls x L
+        M    = shape Ls x L
         W    = shape D  x K
         beta = shape L  x K
     """
 
     # EM algorithm
-	for i  in range(iterations):
-		omega, tau    = E_step(U, V, beta, M, r)
-		U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r)
+    for i  in range(iterations):
+        omega, tau    = E_step(U, V, beta, M, r)
+        U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r)
 
-	return V, U, W, beta
+    return V, U, W, beta
