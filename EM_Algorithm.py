@@ -18,9 +18,8 @@ import torch.nn.functional as F
 # ============================================================
 # Global variables
 # ============================================================
-lambda_w  = 1.0
-lambda_si = 1.0
-r = 5 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def ridge_solver_batch(Sigma, Vector):
     """
@@ -52,6 +51,9 @@ def get_psi(beta, V, Ls, lambda_psi):
         Inputs:
         beta = shape L  x K
         V    = shape Ls  x K
+
+        Output:
+        psi    = shape K x K
     """
 
     # Compute psi
@@ -59,7 +61,7 @@ def get_psi(beta, V, Ls, lambda_psi):
     beta1   = beta_ls[:, :, None]                               #beta1     = shape Ls x K x 1
     beta2   = beta_ls[:, None, :]                               #beta2     = shape Ls x 1 x K
     betabetat = torch.sum(torch.matmul(beta1, beta2), axis=0)   #betabetat = shape K  x K   
-    psi = torch.matmul((betabetat + lambda_psi*torch.eye(V.shape[1])).inverse(),torch.matmul(beta_ls.t(), V))   #psi = shape K x K
+    psi = torch.matmul((betabetat + lambda_psi*torch.eye(V.shape[1]).to(device)).inverse(),torch.matmul(beta_ls.t(), V))   #psi = shape K x K
 
     return psi
 
@@ -77,7 +79,7 @@ def update_W(X, U, lambda_w):
 
     # Update for W
     sigma_w = torch.matmul(torch.transpose(X, 0, 1), X) + lambda_w * torch.eye(X.shape[1]).type(X.type())
-    W = torch.inverse(sigma_w) * torch.matmul(torch.transpose(X, 0, 1), U)
+    W = torch.matmul(torch.inverse(sigma_w), torch.matmul(torch.transpose(X, 0, 1), U))
     
     return W
 
@@ -98,15 +100,15 @@ def update_U(X, Y, V, W, omega, lambda_u):
 
     # Update for U
 
-    kappa   = (Y - 0.5)[:,:,None].repeat(1,1,V.shape[1])    #kappa = shape N x Ls x K 
-    sigma_U = torch.empty(X.shape[0], V.shape[1], V.shape[1])   #sigma_U = shape N x K x K
+    kappa   = (Y - 0.5)[:,:,None].repeat(1,1,V.shape[1])        #kappa = shape N x Ls x K
+    sigma_u = torch.empty(X.shape[0], V.shape[1], V.shape[1]).to(device)   #sigma_U = shape N x K x K
     v1      = V[:, :, None]             #v1 = shape Ls x K x 1
     v2      = V[:, None, :]             #v2 = shape Ls x 1 x K
     vvt     = torch.matmul(v1,v2)       #v2 = shape Ls x K x K
 
     for i in range(X.shape[0]):
         omega_i    = (omega[i])[:, None, None].repeat(1, V.shape[1], V.shape[1])        #omega_i = shape Ls x K x K
-        sigma_u[i] = (torch.sum(omega_i*vvt, axis=0) + lambda_u*torch.eye(V.shape[1])).inverse()   #sigma_u[i] = shape K x K
+        sigma_u[i] = (torch.sum(omega_i*vvt, axis=0) + lambda_u*torch.eye(V.shape[1]).to(device)).inverse()   #sigma_u[i] = shape K x K
 
     term1 = torch.sum(kappa*V, axis=1).squeeze()    #term1 = shape N x K
     term2 = lambda_u*torch.matmul(X,W)              #term2 = shape N x K
@@ -132,9 +134,9 @@ def update_V(Y, M, U, beta, omega, tau, lambda_v, r):
 
     # Update for V
 
-    kappa_y = ((Y - 0.5).t())[:,:,None].repeat(1,1,U.shape[1])      #kappa = shape Ls x N x K 
-    kappa_m = 0.5*(M + r)[:,:,None].repeat(1,1,beta.shape[1])       #kappa_m = shape Ls x L x K
-    sigma_V = torch.empty(Y.shape[1], U.shape[1], U.shape[1])       #sigma_V = shape Ls x K x K
+    kappa_y = ((Y - 0.5).t())[:,:,None].repeat(1,1,U.shape[1])      #kappa = shape Ls x N x K
+    kappa_m = 0.5*(M + r)[:,:,None].repeat(1,1,beta.shape[1])               #kappa_m = shape Ls x L x K
+    sigma_V = torch.empty(Y.shape[1], U.shape[1], U.shape[1]).to(device)              #sigma_V = shape Ls x K x K
     u1      = U[:, :, None]             #u1 = shape N x K x 1
     u2      = U[:, None, :]             #u2 = shape N x 1 x K
     uut     = torch.matmul(u1,u2)       #uut = shape N x K x K
@@ -145,7 +147,7 @@ def update_V(Y, M, U, beta, omega, tau, lambda_v, r):
     for i in range(Y.shape[1]):
         omega_t_i    = (omega_t[i])[:, None, None].repeat(1, U.shape[1], U.shape[1])        #omega_i = shape N x K x K
         tau_i      = (tau[i])[:, None, None].repeat(1, beta.shape[1], beta.shape[1])        #tau_i = shape L x K x K
-        sigma_V[i] = (torch.sum(omega_t_i*uut, axis=0) + torch.sum(tau_i*betabetat, axis=0) + lambda_v*torch.eye(U.shape[1])).inverse()   #sigma_u[i] = shape K x K
+        sigma_V[i] = (torch.sum(omega_t_i*uut, axis=0) + torch.sum(tau_i*betabetat, axis=0) + lambda_v*torch.eye(U.shape[1]).to(device)).inverse()   #sigma_u[i] = shape K x K
 
     term1 = torch.sum(kappa_y*U, axis=1).squeeze()                  #term1 = shape Ls x K
     term2 = torch.sum(kappa_m*beta, axis=1).squeeze()               #term2 = shape Ls x K
@@ -153,7 +155,7 @@ def update_V(Y, M, U, beta, omega, tau, lambda_v, r):
     
     return V
 
-def update_beta(M, V, tau, lambda_beta):
+def update_beta(M, V, tau, lambda_beta, r):
     """
         Calculates the updated U for the M step of the EM algorithm
 
@@ -168,15 +170,15 @@ def update_beta(M, V, tau, lambda_beta):
 
     # Update for beta
 
-    kappa_m    = (0.5*(M + r).t())[:,:,None].repeat(1,1,beta.shape[1])  #kappa_m = shape L x Ls x K
-    sigma_beta = torch.empty(M.shape[1], V.shape[1], V.shape[1])        #sigma_beta = shape L x K x K
+    kappa_m    = (0.5*(M + r).t())[:,:,None].repeat(1,1,V.shape[1])  #kappa_m = shape L x Ls x K
+    sigma_beta = torch.empty(M.shape[1], V.shape[1], V.shape[1]).to(device)        #sigma_beta = shape L x K x K
     v1      = V[:, :, None]             #v1 = shape Ls x K x 1
     v2      = V[:, None, :]             #v2 = shape Ls x 1 x K
     vvt     = torch.matmul(v1,v2)       #v2 = shape Ls x K x K
     tau_t   = tau.t()                   #tau_t = shape L x Ls
     for i in range(M.shape[1]):
         tau_t_i    = (tau_t[i])[:, None, None].repeat(1, V.shape[1], V.shape[1])        #tau_t_i = shape Ls x K x K
-        sigma_beta[i] = (torch.sum(tau_t_i*vvt, axis=0) + lambda_beta*torch.eye(V.shape[1])).inverse()   #sigma_u[i] = shape K x K
+        sigma_beta[i] = (torch.sum(tau_t_i*vvt, axis=0) + lambda_beta*torch.eye(V.shape[1]).to(device)).inverse()   #sigma_u[i] = shape K x K
 
     term1 = torch.sum(kappa_m*V, axis=1).squeeze()              #term1 = shape L x K
     beta  = torch.matmul(sigma_beta, term1 [:,:,None]).squeeze()#beta  = shape L x K
@@ -197,10 +199,10 @@ def E_step(U, V, beta, M, r):
         tau   = shape Ls x L
     """
     zheta = torch.matmul(U, torch.transpose(V, 0, 1)) # N x Ls
-    omega = (1/(2*zheta)) * F.tanh(zheta/2)             # N x Ls
+    omega = (1/(2*zheta)) * torch.tanh(zheta/2)             # N x Ls
     
     gamma = torch.matmul(V, torch.transpose(beta, 0, 1)) # Ls x L
-    tau = ((M +r)/ (2*gamma)) * F.tanh(gamma/2)
+    tau = ((M +r)/ (2*gamma)) * torch.tanh(gamma/2) # Ls x L
 
     return omega, tau
 
@@ -227,13 +229,17 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
 
     # Update U, V, beta, W
     U    = update_U(X, Y, V, W, omega, lambda_u)
+    print("U updated")
     V    = update_V(Y, M, U, beta, omega, tau, lambda_v, r)
-    beta = update_beta(M, V, tau, lambda_beta)
+    print("V updated")
+    beta = update_beta(M, V, tau, lambda_beta, r)
+    print("beta updated")
     W    = update_W(X, U, lambda_w)
+    print("W updated")
 
     return U, V, beta, W
 
-def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, r):
+def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls):
     """
         Calculates the M step of the EM algorithm
 
@@ -249,6 +255,9 @@ def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_
     # EM algorithm
     for i  in range(iterations):
         omega, tau    = E_step(U, V, beta, M, r)
+        print("Iter : {} E-Step Done".format(i))
         U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r)
-
-    return V, U, W, beta
+        print("Iter : {} M-Step Done".format(i))
+    psi = get_psi(beta, V, Ls, lambda_psi)
+    print("psi calculated")
+    return U, V, beta, W, psi
