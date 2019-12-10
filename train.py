@@ -48,7 +48,7 @@ lambda_w    = 1.0
 lambda_psi  = 1.0
 r           = 5.0
 K           = 500
-k           = 5
+topk        = 5
 M = torch.matmul(Y.t(), Y)[:num_seen_labels,:].float().to(device)  #label co-occurrence matrix
 
 for split_idx in range(num_splits):
@@ -63,5 +63,5 @@ for split_idx in range(num_splits):
     beta = torch.rand(M.shape[1], K).float().to(device)
 
     U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels)
-    precision = precision_at_k(X, Y, W, beta, psi, k)
+    precision = precision_at_k(X, Y, W, beta, psi, topk)
     print("Split index : {} \t Precision : {}".format(split_idx, precision))
