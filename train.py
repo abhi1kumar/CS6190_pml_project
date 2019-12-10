@@ -15,7 +15,7 @@ from EM_Algorithm import *
 from test.test_read_data_split import *
 
 parser = argparse.ArgumentParser(description='Read XML data from files')
-parser.add_argument('--dir_path'            , type=str, default='Bibtex'        , help='path of the directory containing data-file')
+parser.add_argument('--dir_path'            , type=str, default='data/Bibtex'        , help='path of the directory containing data-file')
 parser.add_argument('--data_filename'       , type=str, default='Bibtex_data.txt'    , help='rel path of data_filename')
 parser.add_argument('--train_split_filename', type=str, default='bibtex_trSplit.txt' , help='rel path of train_split_filename')
 parser.add_argument('--test_split_filename' , type=str, default='bibtex_tstSplit.txt', help='rel path of test_split_filename')
