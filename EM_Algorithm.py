@@ -14,6 +14,7 @@
 import torch
 import numpy as np
 import torch.nn.functional as F
+from util import *
 
 # ============================================================
 # Global variables
@@ -198,6 +199,7 @@ def E_step(U, V, beta, M, r):
         omega = shape N  x Ls
         tau   = shape Ls x L
     """
+
     zheta = torch.matmul(U, torch.transpose(V, 0, 1)) # N x Ls
     omega = (1/(2*zheta)) * torch.tanh(zheta/2)             # N x Ls
     
@@ -229,17 +231,17 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
 
     # Update U, V, beta, W
     U    = update_U(X, Y, V, W, omega, lambda_u)
-    print("U updated")
+    #print("U updated")
     V    = update_V(Y, M, U, beta, omega, tau, lambda_v, r)
-    print("V updated")
+    #print("V updated")
     beta = update_beta(M, V, tau, lambda_beta, r)
-    print("beta updated")
+    #print("beta updated")
     W    = update_W(X, U, lambda_w)
-    print("W updated")
+    #print("W updated")
 
     return U, V, beta, W
 
-def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls):
+def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls, test_X, test_Y, topk):
     """
         Calculates the M step of the EM algorithm
 
@@ -253,11 +255,20 @@ def EM_algorithm(iterations, X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_
     """
 
     # EM algorithm
+    print("\n==================================================================================================\n")
+    print("                                         EM Algorithm")
+    print("\n==================================================================================================\n")
+
     for i  in range(iterations):
         omega, tau    = E_step(U, V, beta, M, r)
-        print("Iter : {} E-Step Done".format(i))
+        #print("E-Step Done".format(i))
         U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r)
-        print("Iter : {} M-Step Done".format(i))
+        #print("M-Step Done".format(i))
+        psi = get_psi(beta, V, Ls, lambda_psi)
+        precision_train = precision_at_k(X, Y_all, W, beta, psi, topk)
+        precision_test = precision_at_k(test_X, test_Y, W, beta, psi, topk)
+        print("Iter : {:3d} \t Precision Train : {:.4f} \t Precision Test : {:.4f}".format(i, precision_train, precision_test))
+
     psi = get_psi(beta, V, Ls, lambda_psi)
     print("psi calculated")
     return U, V, beta, W, psi

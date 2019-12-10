@@ -5,6 +5,8 @@ import torch
 import os.path as osp
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def get_data_labels_from_datafile(dir_path, data_file_rel_path):
     """
         Reads data file
@@ -58,13 +60,18 @@ def precision_at_k(X, Y, W, beta, psi, topk):
 
             k = top-k accuracy
     """
+    #print(X.shape, Y.shape)
 
     U = torch.matmul(X, W)          # U = shape N x K
     V = torch.matmul(beta, psi)     # V = shape L x K
     y_pred = torch.matmul(U, V.t()) #y_pred = shape N x L
     y_pred_sort_idx = torch.argsort(y_pred, dim = 1, descending=True)[:,:topk]
-    y_pred_sort_idx = y_pred_sort_idx + (y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None]
+    #print(y_pred_sort_idx)
+    #print((y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None].to(device))
+    y_pred_sort_idx = y_pred_sort_idx + (y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None].to(device)
+    #print(y_pred_sort_idx)
+    #print(torch.min(y_pred_sort_idx), torch.max(y_pred_sort_idx))
     y_pred_sort_idx_f = y_pred_sort_idx.flatten()
     Y_f = Y.flatten()
-    precision = torch.sum(Y_f[y_pred_sort_idx_f]==1)/(Y.shape[0]*topk)
+    precision = (1.0*torch.sum(Y_f[y_pred_sort_idx_f]==1))/(Y.shape[0]*topk)
     return precision
