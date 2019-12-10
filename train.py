@@ -49,12 +49,23 @@ lambda_psi  = 1.0
 r           = 5.0
 K           = 500
 topk        = 5
-M = torch.matmul(Y.t(), Y)[:num_seen_labels,:].float().to(device)  #label co-occurrence matrix
 
 for split_idx in range(num_splits):
-    split = train_indices_for_each_split[split_idx]
-    train_X = X[split, :]
-    train_Y = Y[split, :num_seen_labels]
+    train_indices = train_indices_for_each_split[split_idx]
+    test_indices  = test_indices_for_each_split [split_idx]
+
+    # Train data with seen and all labels
+    train_X      = X[train_indices]
+    train_Y_seen = Y[train_indices, :num_seen_labels]
+    train_Y      = Y[train_indices]
+
+    # Test data with seen and all labels
+    test_X      = X[test_indices]
+    test_Y_seen = Y[test_indices, :num_seen_labels]
+    test_Y      = Y[test_indices]
+
+    # Label co-occurrence matrix
+    M = torch.matmul(train_Y.t(), train_Y)[:num_seen_labels,:].float().to(device) 
 
     # Initialisation
     V    = torch.rand(train_Y.shape[1], K).float().to(device)
@@ -63,5 +74,8 @@ for split_idx in range(num_splits):
     beta = torch.rand(M.shape[1], K).float().to(device)
 
     U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels)
-    precision = precision_at_k(X, Y, W, beta, psi, topk)
-    print("Split index : {} \t Precision : {}".format(split_idx, precision))
+
+    # Get Train and Test precision
+    precision_train = precision_at_k(train_X, train_Y, W, beta, psi, topk)
+    precision_test = precision_at_k(test_X, test_Y, W, beta, psi, topk)
+    print("Split_index= {:2d} Precision_train= {:.4f} Precision_test= {:.4f}".format(split_idx, precision_train, precision_test))
