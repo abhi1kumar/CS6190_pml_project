@@ -44,7 +44,7 @@ def get_indices_for_different_splits(dir_path, split_file_rel_path):
 
     return indices_for_each_split
 
-def precision_at_k(X, Y, W, beta, psi, k):
+def precision_at_k(X, Y, W, beta, psi, topk):
     """
             Calculates the metric precision@k
 
@@ -60,6 +60,9 @@ def precision_at_k(X, Y, W, beta, psi, k):
     U = torch.matmul(X, W)          # U = shape N x K
     V = torch.matmul(beta, psi)     # V = shape L x K
     y_pred = torch.matmul(U, V.t()) #y_pred = shape N x L
-    y_pred_sort_idx = torch.argsort(y_pred, dim = 1, descending=True)[:,:k]
-    precision = torch.sum(Y[y_pred_sort_idx]==1)/(Y.shape[0]*k)
+    y_pred_sort_idx = torch.argsort(y_pred, dim = 1, descending=True)[:,:topk]
+    y_pred_sort_idx = y_pred_sort_idx + (y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None]
+    y_pred_sort_idx_f = y_pred_sort_idx.flatten()
+    Y_f = Y.flatten()
+    precision = torch.sum(Y_f[y_pred_sort_idx_f]==1)/(Y.shape[0]*topk)
     return precision
