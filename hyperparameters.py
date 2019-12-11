@@ -11,16 +11,16 @@ lambda_beta = 1.0
 lambda_w    = 1.0
 lambda_psi  = 1.0
 r           = 5.0
-K           = 500
+K           = 128  # 80% of the total labels 500
 cyclic      = True # Use cyclic loss while updating the weights
-topk        = 5
+topk        = 1
 
 print("========================================================================")
 print("                         Parameters")
 print("========================================================================")
 print("Num Seen labels   = {}".format(num_seen_labels))
 print("Num EM iterations = {}".format(num_iterations))
-print("K                 = {}".format(K))
+print("Latent factors K  = {}".format(K))
 print("Cyclic Loss       = {}".format(cyclic))
 print("Accuracy topk     = {}".format(topk))
 print("")
