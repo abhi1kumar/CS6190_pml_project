@@ -61,6 +61,8 @@ for split_idx in range(num_splits):
     U    = torch.matmul(train_X, W).to(device)
     beta = torch.normal(mean = 0, std = np.sqrt(1/M.shape[1]), size = (M.shape[1], K)).float().to(device)
 
+    print("Train Data   X      shape =", train_X.shape)
+    print("Train Labels Y seen shape =", train_Y_seen.shape)
     U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y_seen, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels, test_X, test_Y, topk, cyclic)
 
     # Get Train and Test precision

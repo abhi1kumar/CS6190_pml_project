@@ -12,7 +12,7 @@ lambda_w    = 1.0
 lambda_psi  = 1.0
 r           = 5.0
 K           = 128  # 80% of the total labels 500
-cyclic      = True # Use cyclic loss while updating the weights
+cyclic      = False # Use cyclic loss while updating the weights
 topk        = 1
 
 print("========================================================================")
