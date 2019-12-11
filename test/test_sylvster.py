@@ -10,7 +10,7 @@ def test(X, X_hat):
     print("Obtained =", X_hat)
     diff = torch.max(torch.abs(X.reshape(-1) - X_hat.reshape(-1)))/X.numel()
     print("Max Diff =", diff)
-    if diff < 1e-6:
+    if diff < 1e-4:
         print("Test passed")
     else:
         print("Test failed!!!")
