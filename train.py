@@ -61,7 +61,7 @@ for split_idx in range(num_splits):
     U    = torch.matmul(train_X, W).to(device)
     beta = torch.rand(M.shape[1], K).float().to(device)
 
-    U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y_seen, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels, test_X, test_Y, topk)
+    U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y_seen, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels, test_X, test_Y, topk, cyclic)
 
     # Get Train and Test precision
     precision_train = precision_at_k(train_X, train_Y_seen, W, beta, psi, topk)

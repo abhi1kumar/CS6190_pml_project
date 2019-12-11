@@ -15,6 +15,7 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 from util import *
+from lib.sylvester import *
 
 # ============================================================
 # Global variables
@@ -66,21 +67,32 @@ def get_psi(beta, V, Ls, lambda_psi):
 
     return psi
 
-def update_W(X, U, lambda_w):
+def update_W(X, U, lambda_w, cyclic):
     """
         Calculates the updated U for the M step of the EM algorithm
 
         Inputs:
         X    = shape N  x D
         U    = shape N  x K
+        Y    = shape N  x Ls
+        V    = shape Ls x K
 
         Output:
         W    = shape D x K
     """
+    if cyclic:
+        # Solve Sylvster equation
+        Z = torch.matmul(Y, V)  # N x K
+        A = torch.matmul(torch.transpose(X, 0, 1), X)  # D x D
+        B = torch.matmul(torch.transpose(Z, 0, 1), Z)  # K x K
+        C = torch.matmul(torch.transpose(X, 0, 1), U) + torch.matmul(torch.transpose(X, 0, 1), Z) # D x K
 
-    # Update for W
-    sigma_w = torch.matmul(torch.transpose(X, 0, 1), X) + lambda_w * torch.eye(X.shape[1]).type(X.type())
-    W = torch.matmul(torch.inverse(sigma_w), torch.matmul(torch.transpose(X, 0, 1), U))
+        # Solve sylvester equations
+        # AW + WB = C
+        W = solve_sylvester(A, B, C)
+    else:
+        sigma_w = torch.matmul(torch.transpose(X, 0, 1), X) + lambda_w * torch.eye(X.shape[1]).type(X.type())
+        W = torch.matmul(torch.inverse(sigma_w), torch.matmul(torch.transpose(X, 0, 1), U))
     
     return W
 
@@ -132,9 +144,6 @@ def update_V(Y, M, U, beta, omega, tau, lambda_v, r):
         Output:
         V    = shape Ls x K
     """
-
-    # Update for V
-
     kappa_y = ((Y - 0.5).t())[:,:,None].repeat(1,1,U.shape[1])      #kappa = shape Ls x N x K
     kappa_m = 0.5*(M + r)[:,:,None].repeat(1,1,beta.shape[1])               #kappa_m = shape Ls x L x K
     sigma_V = torch.empty(Y.shape[1], U.shape[1], U.shape[1]).to(device)              #sigma_V = shape Ls x K x K
@@ -208,7 +217,7 @@ def E_step(U, V, beta, M, r):
 
     return omega, tau
 
-def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r):
+def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r, cyclic):
     """
         Calculates the M step of the EM algorithm
 
@@ -236,12 +245,12 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
     #print("V updated")
     beta = update_beta(M, V, tau, lambda_beta, r)
     #print("beta updated")
-    W    = update_W(X, U, lambda_w)
+    W    = update_W(X, U, lambda_w, cyclic)
     #print("W updated")
 
     return U, V, beta, W
 
-def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls, test_X, test_Y, topk):
+def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls, test_X, test_Y, topk, cyclic):
     """
         Calculates the M step of the EM algorithm
 
@@ -252,6 +261,8 @@ def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, 
         M    = shape Ls x L
         W    = shape D  x K
         beta = shape L  x K
+        cyclic = True # Suggests to use cyclic loss while training
+
     """
 
     # EM algorithm
@@ -262,7 +273,7 @@ def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, 
     for i  in range(iterations):
         omega, tau    = E_step(U, V, beta, M, r)
         #print("E-Step Done".format(i))
-        U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r)
+        U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r, cyclic)
         #print("M-Step Done".format(i))
         psi = get_psi(beta, V, Ls, lambda_psi)
         precision_train = precision_at_k(X, Y_all, W, beta, psi, topk)
