@@ -56,10 +56,10 @@ for split_idx in range(num_splits):
     M = torch.matmul(train_Y.t(), train_Y)[:num_seen_labels,:].float().to(device) 
 
     # Initialisation
-    V    = torch.rand(train_Y_seen.shape[1], K).float().to(device)
-    W    = torch.rand(train_X.shape[1], K).float().to(device)
+    V    = torch.normal(mean = 0, std = np.sqrt(1/train_Y.shape[1]), size = (train_Y_seen.shape[1], K)).float().to(device)
+    W    = torch.normal(mean = 0, std = np.sqrt(1/train_X.shape[1]), size = (train_X.shape[1], K)).float().to(device)
     U    = torch.matmul(train_X, W).to(device)
-    beta = torch.rand(M.shape[1], K).float().to(device)
+    beta = torch.normal(mean = 0, std = np.sqrt(1/M.shape[1]), size = (M.shape[1], K)).float().to(device)
 
     U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y_seen, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels, test_X, test_Y, topk, cyclic)
 
