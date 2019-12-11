@@ -93,7 +93,7 @@ def update_W(X, U, lambda_w, cyclic):
     else:
         sigma_w = torch.matmul(torch.transpose(X, 0, 1), X) + lambda_w * torch.eye(X.shape[1]).type(X.type())
         W = torch.matmul(torch.inverse(sigma_w), torch.matmul(torch.transpose(X, 0, 1), U))
-    
+ 
     return W
 
 def update_U(X, Y, V, W, omega, lambda_u):
