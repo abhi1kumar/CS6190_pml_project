@@ -67,7 +67,7 @@ def get_psi(beta, V, Ls, lambda_psi):
 
     return psi
 
-def update_W(X, U, lambda_w, cyclic):
+def update_W(X, U, Y, V, lambda_w, cyclic):
     """
         Calculates the updated U for the M step of the EM algorithm
 
@@ -245,7 +245,7 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
     #print("V updated")
     beta = update_beta(M, V, tau, lambda_beta, r)
     #print("beta updated")
-    W    = update_W(X, U, lambda_w, cyclic)
+    W    = update_W(X, U, Y, V, lambda_w, cyclic)
     #print("W updated")
 
     return U, V, beta, W

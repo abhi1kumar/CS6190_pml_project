@@ -1,0 +1,25 @@
+========================================================================
+                         Parameters
+========================================================================
+Num Seen labels   = 80
+Num EM iterations = 1000
+K                 = 500
+Cyclic Loss       = True
+Accuracy topk     = 5
+
+Reading data/Bibtex/Bibtex_data.txt...
+Data   X shape = (7395, 1836)
+Labels Y shape = (7395, 159)
+Reading data/Bibtex/bibtex_trSplit.txt...
+Reading data/Bibtex/bibtex_tstSplit.txt...
+
+Number of splits             = 10
+Train indices for each split = (10, 4880)
+Test indices for each split  = (10, 2515)
+
+==================================================================================================
+
+                                         EM Algorithm
+
+==================================================================================================
+

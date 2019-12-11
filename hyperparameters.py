@@ -3,7 +3,7 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 num_seen_labels = 80
-num_iterations  = 100
+num_iterations  = 1000
 
 lambda_u    = 1.0
 lambda_v    = 1.0
