@@ -12,6 +12,7 @@
 """
 
 import torch
+TOLERANCE = 1e-5
 
 def solve_sylvester(A, B, C):
     """
@@ -46,7 +47,7 @@ def solve_sylvester(A, B, C):
     # Make \mu_i + \nu_j
     X_hat_deno = eig_val_A.view(-1, 1).repeat(1, dim_B) + eig_val_B.view(1, -1).repeat(dim_A, 1)
 
-    X_hat = C_hat * 1.0/X_hat_deno
+    X_hat = C_hat * 1.0/(X_hat_deno + TOLERANCE)
 
     output= torch.matmul(torch.matmul(eig_vec_A.t(), X_hat), eig_vec_B.t())
     
