@@ -250,7 +250,7 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
 
     return U, V, beta, W
 
-def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls, test_X, test_Y, topk, cyclic):
+def EM_algorithm(iterations, X, Y, Y_seen, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls, test_X, test_Y, test_Y_seen, topk, cyclic):
     """
         Calculates the M step of the EM algorithm
 
@@ -266,9 +266,9 @@ def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, 
     """
 
     # EM algorithm
-    print("\n==================================================================================================\n")
+    print("\n==================================================================================================")
     print("                                         EM Algorithm")
-    print("\n==================================================================================================\n")
+    print("==================================================================================================\n")
 
     for i  in range(iterations):
         omega, tau    = E_step(U, V, beta, M, r)
@@ -276,10 +276,15 @@ def EM_algorithm(iterations, X, Y, Y_all, V, U, M, W, beta, lambda_u, lambda_v, 
         U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r, cyclic)
         #print("M-Step Done".format(i))
         psi = get_psi(beta, V, Ls, lambda_psi)
-        precision_train = precision_at_k(X, Y_all, W, beta, psi, topk)
-        precision_test = precision_at_k(test_X, test_Y, W, beta, psi, topk)
-        print("Iter : {:3d} \t Precision Train : {:.4f} \t Precision Test : {:.4f}".format(i, precision_train, precision_test))
+        precision_train = precision_at_k(X, Y, W, beta, psi, topk, isSeen = True)
+        precision_test = precision_at_k(test_X, test_Y, W, beta, psi, topk, isSeen = True)
+        print("Iter= {:3d} \t Train : P@1{} = {:.3f} \t P@3{} = {:.3f} \t P@5{:.3f} \t Test : P@1{} = {:.3f} \t P@3{} = {:.3f} \t P@5{:.3f}" \
+            .format(i, precision_train[0], precision_train[1], precision_train[2], precision_test[0], precision_test[1], precision_test[2]))
 
-    psi = get_psi(beta, V, Ls, lambda_psi)
-    print("psi calculated")
+        if(i%20 == 0):
+            torch.save(U, folder_name + "/u_"+str(i)+".pt")
+            torch.save(V, folder_name + "/v_"+str(i)+".pt")
+            torch.save(beta, folder_name + "/beta_"+str(i)+".pt")
+            torch.save(W, folder_name + "/w_"+str(i)+".pt")
+            torch.save(psi, folder_name + "/psi_"+str(i))
     return U, V, beta, W, psi

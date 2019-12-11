@@ -9,6 +9,7 @@
 """
 import argparse
 import numpy as np
+import random
 
 from util import *
 from EM_Algorithm import *
@@ -37,6 +38,8 @@ print("Train indices for each split =", train_indices_for_each_split.shape)
 print("Test indices for each split  =", test_indices_for_each_split.shape)
 
 num_all_labels  = Y.shape[1]
+seen_label_indices = np.array(random.sample(range(num_all_labels), num_seen_labels))
+print(seen_label_indices)
 
 for split_idx in range(num_splits):
     train_indices = train_indices_for_each_split[split_idx]
@@ -44,16 +47,16 @@ for split_idx in range(num_splits):
 
     # Train data with seen and all labels
     train_X      = X[train_indices]
-    train_Y_seen = Y[train_indices, :num_seen_labels]
+    train_Y_seen = Y[train_indices, seen_label_indices]
     train_Y      = Y[train_indices]
 
     # Test data with seen and all labels
     test_X      = X[test_indices]
-    test_Y_seen = Y[test_indices, :num_seen_labels]
+    test_Y_seen = Y[test_indices, seen_label_indices]
     test_Y      = Y[test_indices]
 
     # Label co-occurrence matrix
-    M = torch.matmul(train_Y.t(), train_Y)[:num_seen_labels,:].float().to(device) 
+    M = torch.matmul(train_Y.t(), train_Y)[seen_label_indices,:].float().to(device) 
 
     # Initialisation
     V    = torch.normal(mean = 0, std = np.sqrt(1/train_Y.shape[1]), size = (train_Y_seen.shape[1], K)).float().to(device)
@@ -63,12 +66,12 @@ for split_idx in range(num_splits):
 
     print("Train Data   X      shape =", train_X.shape)
     print("Train Labels Y seen shape =", train_Y_seen.shape)
-    U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y_seen, train_Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels, test_X, test_Y, topk, cyclic)
+    U, V, beta, W, psi = EM_algorithm(num_iterations, train_X, train_Y, train_Y_seen, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, num_seen_labels, test_X, test_Y, test_Y_seen, topk, cyclic)
 
     # Get Train and Test precision
     precision_train = precision_at_k(train_X, train_Y_seen, W, beta, psi, topk)
     precision_test = precision_at_k(test_X, test_Y_seen, W, beta, psi, topk)
     print("                                         EM Algorithm Completed")
     print("\n==================================================================================================\n")
-    print("Split_index= {:2d} Precision_train= {:.4f} Precision_test= {:.4f}".format(split_idx, precision_train, precision_test))
+    print("Split_index= {:2d} Precision@{}_train= {:.4f} Precision@{}_test= {:.4f}".format(split_idx, topk, precision_train, topk, precision_test))
     break
