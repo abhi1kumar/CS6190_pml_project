@@ -46,7 +46,21 @@ def get_indices_for_different_splits(dir_path, split_file_rel_path):
 
     return indices_for_each_split
 
-def precision_at_k(X, Y, W, beta, psi, topk):
+def eval_precision(U, V, Y, topk):
+
+    val = [1, 3, 5]
+    prec = []
+    y_pred = torch.matmul(U, V.t()) #y_pred = shape N x L
+    y_pred_sort_idx = torch.argsort(y_pred, dim = 1, descending=True)[:,:topk]
+    y_pred_sort_idx = y_pred_sort_idx + (y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None].to(device)
+    for i in val:
+        y_pred_sort_idx_f = y_pred_sort_idx[:,:i].flatten()
+        Y_f = Y.flatten()
+        precision = (1.0*torch.sum(Y_f[y_pred_sort_idx_f]==1))/(Y.shape[0]*i)
+        prec.append(precision)
+    return prec
+
+def precision_at_k(X, Y, W, beta, psi, V, topk, num_seen_labels, isSeen = False, isUnseen = False, isSeenUnseen = False):
     """
             Calculates the metric precision@k
 
@@ -63,15 +77,12 @@ def precision_at_k(X, Y, W, beta, psi, topk):
     #print(X.shape, Y.shape)
 
     U = torch.matmul(X, W)          # U = shape N x K
-    V = torch.matmul(beta, psi)     # V = shape L x K
-    y_pred = torch.matmul(U, V.t()) #y_pred = shape N x L
-    y_pred_sort_idx = torch.argsort(y_pred, dim = 1, descending=True)[:,:topk]
-    #print(y_pred_sort_idx)
-    #print((y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None].to(device))
-    y_pred_sort_idx = y_pred_sort_idx + (y_pred.shape[1]*torch.arange(y_pred.shape[0]))[:, None].to(device)
-    #print(y_pred_sort_idx)
-    #print(torch.min(y_pred_sort_idx), torch.max(y_pred_sort_idx))
-    y_pred_sort_idx_f = y_pred_sort_idx.flatten()
-    Y_f = Y.flatten()
-    precision = (1.0*torch.sum(Y_f[y_pred_sort_idx_f]==1))/(Y.shape[0]*topk)
-    return precision
+    if(isSeen):
+        prec = eval_precision(U, V, Y, topk)
+    if(isUnseen):
+        V_unseen = torch.matmul(beta[num_seen_labels:,:], psi)
+        prec = eval_precision(U, V_unseen, Y[:, num_seen_labels:], topk)
+    if(isSeenUnseen):
+        V_new = torch.matmul(beta, psi)
+        prec = eval_precision(U, V_new, Y, topk)
+    return prec

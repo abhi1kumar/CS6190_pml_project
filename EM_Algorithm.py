@@ -46,7 +46,7 @@ def ridge_solver_batch(Sigma, Vector):
     
     return output
 
-def get_psi(beta, V, Ls, lambda_psi):
+def get_psi(beta, V, lambda_psi):
     """
         Calculates psi once beta and V have been computed
 
@@ -59,6 +59,7 @@ def get_psi(beta, V, Ls, lambda_psi):
     """
 
     # Compute psi
+    Ls      = V.shape[0]
     beta_ls = beta[:Ls, :]                                      #beta_ls   = shape Ls x K
     beta1   = beta_ls[:, :, None]                               #beta1     = shape Ls x K x 1
     beta2   = beta_ls[:, None, :]                               #beta2     = shape Ls x 1 x K
@@ -250,41 +251,13 @@ def M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, 
 
     return U, V, beta, W
 
-def EM_algorithm(iterations, X, Y, Y_seen, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, Ls, test_X, test_Y, test_Y_seen, topk, cyclic):
-    """
-        Calculates the M step of the EM algorithm
-
-        Inputs:
-        X    = shape N  x D
-        V    = shape Ls x K
-        U    = shape N  x K
-        M    = shape Ls x L
-        W    = shape D  x K
-        beta = shape L  x K
-        cyclic = True # Suggests to use cyclic loss while training
-
-    """
-
+def EM_algorithm(X, Y, V, U, M, W, beta, lambda_u, lambda_v, lambda_beta, lambda_w, lambda_psi, r, cyclic):
     # EM algorithm
-    print("\n==================================================================================================")
-    print("                                         EM Algorithm")
-    print("==================================================================================================\n")
 
-    for i  in range(iterations):
-        omega, tau    = E_step(U, V, beta, M, r)
-        #print("E-Step Done".format(i))
-        U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r, cyclic)
-        #print("M-Step Done".format(i))
-        psi = get_psi(beta, V, Ls, lambda_psi)
-        precision_train = precision_at_k(X, Y, W, beta, psi, topk, isSeen = True)
-        precision_test = precision_at_k(test_X, test_Y, W, beta, psi, topk, isSeen = True)
-        print("Iter= {:3d} \t Train : P@1{} = {:.3f} \t P@3{} = {:.3f} \t P@5{:.3f} \t Test : P@1{} = {:.3f} \t P@3{} = {:.3f} \t P@5{:.3f}" \
-            .format(i, precision_train[0], precision_train[1], precision_train[2], precision_test[0], precision_test[1], precision_test[2]))
-
-        if(i%20 == 0):
-            torch.save(U, folder_name + "/u_"+str(i)+".pt")
-            torch.save(V, folder_name + "/v_"+str(i)+".pt")
-            torch.save(beta, folder_name + "/beta_"+str(i)+".pt")
-            torch.save(W, folder_name + "/w_"+str(i)+".pt")
-            torch.save(psi, folder_name + "/psi_"+str(i))
+    #E-Step
+    omega, tau    = E_step(U, V, beta, M, r)
+    #M-Step
+    U, V, beta, W = M_step(X, Y, V, U, M, W, beta, tau, omega, lambda_u, lambda_v, lambda_beta, lambda_w, r, cyclic)
+    #Regression
+    psi = get_psi(beta, V, lambda_psi)
     return U, V, beta, W, psi
