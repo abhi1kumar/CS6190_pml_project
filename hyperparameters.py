@@ -19,6 +19,7 @@ r           = 5
 K           = 128  # 80% of the total labels 159
 cyclic      = False # Use cyclic loss while updating the weights
 topk        = 5
+init_method = "xavier_init"	#Use xavier_init for xavier initialisation
 
 print("========================================================================")
 print("                         Parameters")

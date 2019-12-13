@@ -32,6 +32,14 @@ def get_data_labels_from_datafile(dir_path, data_file_rel_path):
 
     return X, Y
 
+def normaliseX(X):
+    """
+        Normalise the matrix X
+    """
+    X_l2   = torch.sqrt(torch.sum(torch.pow(X,2), axis=1))[:, None]
+    X_norm = X_norm/X_l2
+    return X_norm
+
 def get_indices_for_different_splits(dir_path, split_file_rel_path):
     """
         Returns arrays of each of the training splits.

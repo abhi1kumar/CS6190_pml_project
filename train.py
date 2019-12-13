@@ -25,6 +25,9 @@ args = parser.parse_args()
 X, Y = get_data_labels_from_datafile(args.dir_path, args.data_filename)
 X, Y = torch.tensor(X).float().to(device), torch.tensor(Y).float().to(device)
 
+#normalise X
+X = normaliseX(X)
+
 #shuffle Y
 num_all_labels  = Y.shape[1]
 shuffled_indices = np.array(random.sample(range(num_all_labels), num_all_labels))
@@ -59,10 +62,16 @@ for split_idx in range(num_splits):
 	M = torch.matmul(train_Y.t(), train_Y)[:num_seen_labels,:].float().to(device) 
 
 	# Initialisation
-	V    = torch.normal(mean = 0, std = np.sqrt(1/train_Y.shape[1]), size = (train_Y_seen.shape[1], K)).float().to(device)
-	W    = torch.normal(mean = 0, std = np.sqrt(1/train_X.shape[1]), size = (train_X.shape[1], K)).float().to(device)
-	U    = torch.matmul(train_X, W).to(device)
-	beta = torch.normal(mean = 0, std = np.sqrt(1/M.shape[1]), size = (M.shape[1], K)).float().to(device)
+	if(init_method == "xavier_init"):
+		V    = torch.normal(mean = 0, std = np.sqrt(1/train_Y.shape[1]), size = (train_Y_seen.shape[1], K)).float().to(device)
+		W    = torch.normal(mean = 0, std = np.sqrt(1/train_X.shape[1]), size = (train_X.shape[1], K)).float().to(device)
+		beta = torch.normal(mean = 0, std = np.sqrt(1/M.shape[1]), size = (M.shape[1], K)).float().to(device)
+	else : 
+		V    = torch.normal(mean = 0, std = 1, size = (train_Y_seen.shape[1], K)).float().to(device)
+		W    = torch.normal(mean = 0, std = 1, size = (train_X.shape[1], K)).float().to(device)
+		beta = torch.normal(mean = 0, std = 1, size = (M.shape[1], K)).float().to(device)
+	U    	 = torch.matmul(train_X, W).to(device)
+
 
 	print("Train Data   X      shape =", train_X.shape)
 	print("Train Labels Y seen shape =", train_Y_seen.shape)
