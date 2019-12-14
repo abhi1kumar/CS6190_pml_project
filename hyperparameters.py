@@ -8,7 +8,7 @@ random.seed(seed_val)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 num_seen_labels = 80
-num_iterations  = 200
+num_iterations  = 500
 
 lambda_u    = 1.0
 lambda_v    = 1.0
@@ -28,9 +28,11 @@ print("Num Seen labels   = {}".format(num_seen_labels))
 print("Num EM iterations = {}".format(num_iterations))
 print("Latent factor K   = {}".format(K))
 print("Parameter r       = {}".format(r))
+print("init_method       = {}".format(init_method))
 print("Cyclic Loss       = {}".format(cyclic))
 print("Accuracy topk     = {}".format(topk))
 print("")
 
-save_iter   = 20
-save_folder = "run_11"
+save_iter   = 5
+save_folder = "run_1"
+print("save_folder       = {}".format(save_folder))

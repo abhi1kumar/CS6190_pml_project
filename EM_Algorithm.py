@@ -210,7 +210,7 @@ def E_step(U, V, beta, M, r):
         tau   = shape Ls x L
     """
 
-    zheta = torch.matmul(U, torch.transpose(V, 0, 1)) # N x Ls
+    zheta = torch.matmul(U, V.t()) # N x Ls
     omega = (1/(2*zheta)) * torch.tanh(zheta/2)             # N x Ls
     
     gamma = torch.matmul(V, torch.transpose(beta, 0, 1)) # Ls x L
